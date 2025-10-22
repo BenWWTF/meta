@@ -94,10 +94,11 @@ async def root():
 # API Routes
 # ============================================================================
 
-from app.api import publications, organizations, web
+from app.api import publications, organizations, researchers, web
 
 app.include_router(publications.router)
 app.include_router(organizations.router)
+app.include_router(researchers.router)
 app.include_router(web.router)
 
 

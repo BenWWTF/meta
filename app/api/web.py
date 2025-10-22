@@ -43,6 +43,16 @@ async def search(request: Request):
     return template.render(request=request)
 
 
+@router.get("/analytics", response_class=HTMLResponse)
+async def analytics(request: Request):
+    """Analytics and insights dashboard."""
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader("app/templates"))
+    template = env.get_template("analytics.html")
+    return template.render(request=request)
+
+
 @router.get("/organizations", response_class=HTMLResponse)
 async def organizations_list(request: Request):
     """Organization listing page."""

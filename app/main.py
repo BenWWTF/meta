@@ -89,11 +89,13 @@ async def root():
 
 
 # ============================================================================
-# API Routes (To Be Implemented)
+# API Routes
 # ============================================================================
 
-# These will be imported from separate modules once implemented
-# from app.api import publications, organizations, researchers, projects
+from app.api import publications, organizations
+
+app.include_router(publications.router)
+app.include_router(organizations.router)
 
 
 # ============================================================================

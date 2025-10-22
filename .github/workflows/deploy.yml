@@ -1,0 +1,31 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Deploy to Railway
+      uses: railwayapp/deploy-action@v1
+      with:
+        token: ${{ secrets.RAILWAY_TOKEN }}
+        service: api
+
+    - name: Notify deployment
+      if: success()
+      run: |
+        echo "✅ Deployment successful!"
+        echo "App is live at: https://austrian-research-metadata.up.railway.app"
+
+    - name: Notify failure
+      if: failure()
+      run: |
+        echo "❌ Deployment failed!"
+        echo "Check Railway logs for details"

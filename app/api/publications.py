@@ -12,7 +12,7 @@ Endpoints:
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, case
 from datetime import datetime
 from typing import List, Optional
 
@@ -306,3 +306,43 @@ async def get_recent_publications(
             PublicationResponse.model_validate(pub).__dict__ for pub in publications
         ],
     }
+
+
+@router.get(
+    "/stats/by-source",
+    summary="Get statistics by publication source",
+)
+async def get_publications_by_source(db: Session = Depends(get_db)):
+    """
+    Get publication statistics by data source (OpenAIRE, Crossref, etc.).
+
+    **Response:**
+    - Total publications per source
+    - Open access count per source
+    - Open access percentage per source
+    """
+
+    sources = (
+        db.query(
+            Publication.source_system,
+            func.count(Publication.id).label("count"),
+            func.sum(case((Publication.open_access == True, 1), else_=0)).label(
+                "open_access_count"
+            ),
+        )
+        .group_by(Publication.source_system)
+        .all()
+    )
+
+    source_stats = {}
+    for source, count, oa_count in sources:
+        source_name = source or "unknown"
+        source_stats[source_name] = {
+            "total": count,
+            "open_access": oa_count or 0,
+            "open_access_pct": (
+                round((oa_count or 0) / count * 100, 1) if count > 0 else 0
+            ),
+        }
+
+    return source_stats

@@ -8,6 +8,8 @@ Includes health checks, CORS, documentation.
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import datetime
 import logging
@@ -92,10 +94,11 @@ async def root():
 # API Routes
 # ============================================================================
 
-from app.api import publications, organizations
+from app.api import publications, organizations, web
 
 app.include_router(publications.router)
 app.include_router(organizations.router)
+app.include_router(web.router)
 
 
 # ============================================================================

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Austrian Research Metadata Platform{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">🔍</span>
+                    </div>
+                    <div>
+                        <div class="font-bold text-gray-900">ARMP</div>
+                        <div class="text-xs text-gray-500">Austrian Research</div>
+                    </div>
+                </a>
+
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="/" class="text-gray-700 hover:text-blue-600 transition">Home</a>
+                    <a href="/search" class="text-gray-700 hover:text-blue-600 transition">Search</a>
+                    <a href="/organizations" class="text-gray-700 hover:text-blue-600 transition">Organizations</a>
+                    <a href="/about" class="text-gray-700 hover:text-blue-600 transition">About</a>
+                </div>
+
+                <!-- API Link -->
+                <a href="/docs" target="_blank" class="hidden md:inline px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                    API Docs
+                </a>
+
+                <!-- Mobile Menu Button -->
+                <button onclick="toggleMenu()" class="md:hidden p-2 hover:bg-gray-100 rounded">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Mobile Menu -->
+            <div id="mobileMenu" class="hidden md:hidden pb-4 space-y-2">
+                <a href="/" class="block px-3 py-2 rounded-lg hover:bg-gray-100">Home</a>
+                <a href="/search" class="block px-3 py-2 rounded-lg hover:bg-gray-100">Search</a>
+                <a href="/organizations" class="block px-3 py-2 rounded-lg hover:bg-gray-100">Organizations</a>
+                <a href="/about" class="block px-3 py-2 rounded-lg hover:bg-gray-100">About</a>
+                <a href="/docs" class="block px-3 py-2 rounded-lg bg-blue-600 text-white">API Docs</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-100 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <!-- About -->
+                <div>
+                    <h3 class="font-bold text-white mb-4">About ARMP</h3>
+                    <p class="text-gray-400 text-sm">Aggregating Austrian research metadata from open sources to accelerate discovery and innovation.</p>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h3 class="font-bold text-white mb-4">Quick Links</h3>
+                    <ul class="text-gray-400 text-sm space-y-2">
+                        <li><a href="/" class="hover:text-white transition">Home</a></li>
+                        <li><a href="/search" class="hover:text-white transition">Search</a></li>
+                        <li><a href="/organizations" class="hover:text-white transition">Organizations</a></li>
+                    </ul>
+                </div>
+
+                <!-- Resources -->
+                <div>
+                    <h3 class="font-bold text-white mb-4">Resources</h3>
+                    <ul class="text-gray-400 text-sm space-y-2">
+                        <li><a href="/docs" class="hover:text-white transition">API Documentation</a></li>
+                        <li><a href="/about" class="hover:text-white transition">About</a></li>
+                        <li><a href="/contact" class="hover:text-white transition">Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact -->
+                <div>
+                    <h3 class="font-bold text-white mb-4">Contact</h3>
+                    <p class="text-gray-400 text-sm">Austrian Research Metadata Platform</p>
+                    <p class="text-gray-400 text-sm mt-2">research@example.at</p>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-800 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <p class="text-gray-400 text-sm">© 2024 Austrian Research Metadata Platform. All rights reserved.</p>
+                    <div class="flex space-x-6 mt-4 md:mt-0">
+                        <a href="#" class="text-gray-400 hover:text-white transition text-sm">Privacy Policy</a>
+                        <a href="#" class="text-gray-400 hover:text-white transition text-sm">Terms of Use</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

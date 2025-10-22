@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Search - Austrian Research Metadata Platform{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="text-4xl font-bold mb-4">Search Publications</h1>
+        <p class="text-blue-100">Explore Austrian research across all universities and institutions</p>
+    </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Filters Sidebar -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl p-6 shadow-md sticky top-24">
+                <h2 class="font-bold text-lg mb-6">Filters</h2>
+
+                <form id="filterForm" class="space-y-6">
+                    <!-- Keywords -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Keywords</label>
+                        <input
+                            type="text"
+                            name="q"
+                            id="keywords"
+                            value="{{ request.query_params.get('q', '') }}"
+                            placeholder="e.g., quantum computing"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <!-- Year Range -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Year Range</label>
+                        <div class="space-y-2">
+                            <input
+                                type="number"
+                                name="year_from"
+                                id="yearFrom"
+                                value="{{ request.query_params.get('year_from', '2000') }}"
+                                min="1900"
+                                max="2024"
+                                placeholder="From"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <input
+                                type="number"
+                                name="year_to"
+                                id="yearTo"
+                                value="{{ request.query_params.get('year_to', '2024') }}"
+                                min="1900"
+                                max="2024"
+                                placeholder="To"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Organization -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Organization</label>
+                        <select
+                            name="organization_id"
+                            id="organization"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="">All Organizations</option>
+                        </select>
+                    </div>
+
+                    <!-- Publication Type -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Type</label>
+                        <select
+                            name="pub_type"
+                            id="pubType"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="">All Types</option>
+                            <option value="article">Article</option>
+                            <option value="book">Book</option>
+                            <option value="dataset">Dataset</option>
+                            <option value="software">Software</option>
+                            <option value="conference">Conference</option>
+                        </select>
+                    </div>
+
+                    <!-- Open Access -->
+                    <div class="flex items-center">
+                        <input
+                            type="checkbox"
+                            name="open_access"
+                            id="openAccess"
+                            class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                        />
+                        <label for="openAccess" class="ml-2 text-sm text-gray-700">Open Access Only</label>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="space-y-2">
+                        <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                            Search
+                        </button>
+                        <button type="reset" class="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">
+                            Clear
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="lg:col-span-3">
+            <!-- Results Header -->
+            <div id="resultsHeader" class="mb-6 hidden">
+                <p class="text-gray-600">
+                    Found <span id="resultCount" class="font-bold text-blue-600">0</span> publications
+                </p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading" class="flex items-center justify-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+            </div>
+
+            <!-- Results Grid -->
+            <div id="resultsContainer" class="space-y-4 hidden">
+                <!-- Results will be populated here -->
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="mt-8 flex justify-center gap-2 hidden">
+                <button id="prevBtn" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">Previous</button>
+                <div id="pageInfo" class="px-4 py-2 text-gray-700"></div>
+                <button id="nextBtn" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">Next</button>
+            </div>
+
+            <!-- No Results -->
+            <div id="noResults" class="text-center py-12 hidden">
+                <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900">No publications found</h3>
+                <p class="text-gray-600">Try adjusting your search filters</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentPage = 1;
+    const pageSize = 20;
+    let totalResults = 0;
+
+    // Fetch organizations for filter
+    async function initializeFilter() {
+        try {
+            const response = await fetch('/api/organizations?limit=100');
+            const data = await response.json();
+
+            const select = document.getElementById('organization');
+            data.results.forEach(org => {
+                const option = document.createElement('option');
+                option.value = org.id;
+                option.textContent = org.name;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading organizations:', error);
+        }
+    }
+
+    // Perform search
+    async function performSearch(page = 1) {
+        const keywords = document.getElementById('keywords').value;
+        const yearFrom = document.getElementById('yearFrom').value;
+        const yearTo = document.getElementById('yearTo').value;
+        const orgId = document.getElementById('organization').value;
+        const pubType = document.getElementById('pubType').value;
+        const openAccess = document.getElementById('openAccess').checked;
+
+        // Show loading state
+        document.getElementById('loading').classList.remove('hidden');
+        document.getElementById('resultsContainer').classList.add('hidden');
+        document.getElementById('noResults').classList.add('hidden');
+        document.getElementById('pagination').classList.add('hidden');
+
+        try {
+            // Build query
+            const params = new URLSearchParams();
+            if (keywords) params.append('q', keywords);
+            if (yearFrom) params.append('year_from', yearFrom);
+            if (yearTo) params.append('year_to', yearTo);
+            if (orgId) params.append('organization_id', orgId);
+            if (pubType) params.append('pub_type', pubType);
+            if (openAccess) params.append('open_access', 'true');
+            params.append('limit', pageSize);
+            params.append('offset', (page - 1) * pageSize);
+
+            const response = await fetch(`/api/publications?${params}`);
+            const data = await response.json();
+
+            totalResults = data.total || 0;
+            currentPage = page;
+
+            if (totalResults === 0) {
+                document.getElementById('noResults').classList.remove('hidden');
+                document.getElementById('loading').classList.add('hidden');
+                return;
+            }
+
+            // Populate results
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+
+            data.results.forEach(pub => {
+                const authors = pub.authors ? (Array.isArray(pub.authors) ?
+                    pub.authors.map(a => typeof a === 'string' ? a : a.name).join(', ') :
+                    JSON.parse(pub.authors).map(a => typeof a === 'string' ? a : a.name).join(', ')
+                ) : 'Unknown';
+
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl p-6 shadow-md card-hover border-l-4 border-blue-600';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-4">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-gray-900 mb-2 hover:text-blue-600">
+                                ${pub.title || 'Untitled'}
+                            </h3>
+                            <p class="text-sm text-gray-600 mb-3">
+                                <strong>Authors:</strong> ${authors}
+                            </p>
+                            ${pub.abstract ? `
+                                <p class="text-sm text-gray-700 mb-3 line-clamp-2">
+                                    ${pub.abstract}
+                                </p>
+                            ` : ''}
+                            <div class="flex flex-wrap gap-2 items-center text-sm text-gray-500">
+                                ${pub.publication_year ? `<span>📅 ${pub.publication_year}</span>` : ''}
+                                ${pub.publication_type ? `<span>📄 ${pub.publication_type}</span>` : ''}
+                                ${pub.journal ? `<span>📰 ${pub.journal}</span>` : ''}
+                                ${pub.open_access ? `<span class="bg-green-100 text-green-800 px-2 py-1 rounded">🔓 Open Access</span>` : ''}
+                            </div>
+                            ${pub.doi ? `
+                                <p class="text-sm mt-3">
+                                    <a href="https://doi.org/${pub.doi}" target="_blank" class="text-blue-600 hover:underline">
+                                        DOI: ${pub.doi}
+                                    </a>
+                                </p>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            // Update header and pagination
+            document.getElementById('resultsHeader').classList.remove('hidden');
+            document.getElementById('resultCount').textContent = totalResults.toLocaleString();
+            document.getElementById('loading').classList.add('hidden');
+            container.classList.remove('hidden');
+
+            // Show pagination if needed
+            if (totalResults > pageSize) {
+                document.getElementById('pagination').classList.remove('hidden');
+                document.getElementById('pageInfo').textContent = `Page ${page} of ${Math.ceil(totalResults / pageSize)}`;
+                document.getElementById('prevBtn').disabled = page === 1;
+                document.getElementById('nextBtn').disabled = page >= Math.ceil(totalResults / pageSize);
+            }
+
+        } catch (error) {
+            console.error('Search error:', error);
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('noResults').classList.remove('hidden');
+        }
+    }
+
+    // Event listeners
+    document.getElementById('filterForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        performSearch(1);
+    });
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+        if (currentPage > 1) performSearch(currentPage - 1);
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+        performSearch(currentPage + 1);
+    });
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeFilter();
+        // Show initial results if query present
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('q')) {
+            document.getElementById('keywords').value = params.get('q');
+            performSearch(1);
+        }
+    });
+</script>
+{% endblock %}

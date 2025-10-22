@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Organizations - Austrian Research Metadata Platform{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="text-4xl font-bold mb-4">Austrian Universities & Institutes</h1>
+        <p class="text-blue-100">Explore research output and compare institutions</p>
+    </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Search Bar -->
+    <div class="mb-8">
+        <input
+            type="text"
+            id="searchOrgs"
+            placeholder="Search organizations..."
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+    </div>
+
+    <!-- Organizations Grid -->
+    <div id="orgsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Loading state -->
+        <div class="col-span-full flex justify-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+        </div>
+    </div>
+
+    <!-- Show all button -->
+    <div class="text-center mt-12">
+        <button id="loadMore" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition hidden">
+            Load More Organizations
+        </button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allOrganizations = [];
+    let displayedCount = 9;
+    const pageSize = 9;
+
+    async function loadOrganizations() {
+        try {
+            const response = await fetch('/api/organizations?limit=100');
+            const data = await response.json();
+
+            allOrganizations = data.results || [];
+            displayOrganizations();
+
+            // Show load more button if more than initial batch
+            if (allOrganizations.length > pageSize) {
+                document.getElementById('loadMore').classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error loading organizations:', error);
+            document.getElementById('orgsContainer').innerHTML = `
+                <div class="col-span-full text-center text-red-600">
+                    <p>Error loading organizations. Please try again later.</p>
+                </div>
+            `;
+        }
+    }
+
+    function displayOrganizations(filtered = false) {
+        const container = document.getElementById('orgsContainer');
+
+        if (!filtered) {
+            displayedCount = pageSize;
+        }
+
+        const orgsToDisplay = allOrganizations.slice(0, displayedCount);
+
+        container.innerHTML = '';
+
+        if (orgsToDisplay.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <p class="text-gray-600">No organizations found</p>
+                </div>
+            `;
+            return;
+        }
+
+        orgsToDisplay.forEach((org, index) => {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-xl p-6 shadow-md card-hover slide-in';
+            card.style.animationDelay = `${index * 0.05}s`;
+            card.innerHTML = `
+                <div class="flex items-start justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-900 flex-1">
+                        ${org.name}
+                    </h3>
+                </div>
+
+                <div class="space-y-3 mb-6">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">Publications:</span>
+                        <span class="font-semibold text-blue-600">${org.publication_count || 0}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">Researchers:</span>
+                        <span class="font-semibold text-purple-600">${org.researcher_count || 0}</span>
+                    </div>
+                    ${org.type ? `
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600">Type:</span>
+                            <span class="text-sm text-gray-500">${org.type}</span>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="space-y-2">
+                    <a href="/organizations/${org.id}" class="w-full block text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-sm">
+                        View Details
+                    </a>
+                    <a href="/search?organization_id=${org.id}" class="w-full block text-center px-4 py-2 border border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition text-sm">
+                        View Publications
+                    </a>
+                </div>
+
+                ${org.website ? `
+                    <a href="${org.website}" target="_blank" class="mt-4 block text-center text-blue-600 hover:underline text-sm">
+                        Visit Website →
+                    </a>
+                ` : ''}
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // Search functionality
+    document.getElementById('searchOrgs').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filtered = allOrganizations.filter(org =>
+            org.name.toLowerCase().includes(searchTerm)
+        );
+
+        const container = document.getElementById('orgsContainer');
+        displayedCount = Math.max(pageSize, filtered.length);
+        allOrganizations = filtered;
+
+        if (filtered.length > pageSize) {
+            document.getElementById('loadMore').classList.remove('hidden');
+        } else {
+            document.getElementById('loadMore').classList.add('hidden');
+        }
+
+        displayOrganizations(true);
+    });
+
+    // Load more button
+    document.getElementById('loadMore').addEventListener('click', () => {
+        displayedCount += pageSize;
+        displayOrganizations();
+
+        if (displayedCount >= allOrganizations.length) {
+            document.getElementById('loadMore').classList.add('hidden');
+        }
+    });
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', loadOrganizations);
+</script>
+{% endblock %}

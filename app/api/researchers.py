@@ -336,6 +336,38 @@ async def search_researchers_by_name(
 
 
 @router.get(
+    "/orcid/{orcid_id}",
+    response_model=ResearcherProfileResponse,
+    summary="Get researcher by ORCID",
+)
+async def get_researcher_by_orcid(
+    orcid_id: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Get researcher profile by ORCID ID.
+
+    **Parameters:**
+    - `orcid_id`: ORCID identifier (with or without https://orcid.org/ prefix)
+
+    **Response:**
+    Complete researcher profile with ORCID data and employment/education history.
+    """
+
+    # Normalize ORCID ID (remove URL prefix if present)
+    normalized_orcid = orcid_id.replace("https://orcid.org/", "").replace("http://orcid.org/", "")
+
+    researcher = db.query(Researcher).filter(
+        Researcher.orcid_id == normalized_orcid
+    ).first()
+
+    if not researcher:
+        raise HTTPException(status_code=404, detail="Researcher not found")
+
+    return ResearcherProfileResponse.model_validate(researcher)
+
+
+@router.get(
     "/stats/overview",
     summary="Get researcher statistics",
 )

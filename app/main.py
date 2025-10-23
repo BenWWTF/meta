@@ -90,9 +90,9 @@ async def health_check():
     )
 
 
-@app.get("/", tags=["Info"])
-async def root():
-    """Root endpoint with API information."""
+@app.get("/api/info", tags=["Info"])
+async def api_info():
+    """API information endpoint."""
     return {
         "name": "Austrian Research Metadata Platform",
         "version": "0.1.0",

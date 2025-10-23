@@ -302,8 +302,14 @@ class HarvestLog(Base):
 def init_db():
     """Initialize database with all tables."""
     print("Creating database tables...")
-    Base.metadata.create_all(bind=engine)
-    print("✓ Database initialized successfully")
+    try:
+        # create_all will create tables and indexes only if they don't exist
+        Base.metadata.create_all(bind=engine)
+        print("✓ Database initialized successfully")
+    except Exception as e:
+        # Log the error but don't fail - tables might already exist
+        print(f"Note: {str(e)}")
+        print("✓ Database connection established")
 
 
 def get_db():

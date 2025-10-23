@@ -5,7 +5,7 @@ Main application setup and configuration.
 Includes health checks, CORS, documentation.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +13,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import datetime
 import logging
+import os
 
 from app.database import init_db
 from app.schemas import HealthCheckResponse, ErrorResponse
@@ -22,6 +23,18 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+# Get allowed origins from environment variable
+# Format: comma-separated list of origins
+CORS_ORIGINS = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:3000,http://localhost:8000"
+).split(",")
+
+# Strip whitespace from each origin
+CORS_ORIGINS_LIST = [origin.strip() for origin in CORS_ORIGINS if origin.strip()]
+
+logger.info(f"✓ CORS configured for origins: {CORS_ORIGINS_LIST}")
 
 
 @asynccontextmanager
@@ -48,13 +61,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configure CORS
+# Configure CORS with restricted origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for MVP
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=CORS_ORIGINS_LIST,  # ✅ SECURE: Only allow specific origins
+    allow_credentials=False,  # ✅ SECURE: Disable credentials (public API)
+    allow_methods=["GET", "POST"],  # ✅ SECURE: Only allow needed methods
+    allow_headers=["Content-Type", "Authorization"],  # ✅ SECURE: Only needed headers
 )
 
 
@@ -144,7 +157,44 @@ async def general_exception_handler(request, exc):
 
 
 @app.middleware("http")
-async def log_requests(request, call_next):
+async def add_security_headers(request: Request, call_next):
+    """Add security headers to all responses."""
+    response = await call_next(request)
+
+    # Prevent browsers from guessing MIME type
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    # Prevent clickjacking
+    response.headers["X-Frame-Options"] = "DENY"
+
+    # Enable browser XSS protection
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+
+    # Referrer policy
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+    # Content Security Policy (CSP)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://cdn.plot.ly; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "img-src 'self' https: data:; "
+        "font-src 'self' https:; "
+        "connect-src 'self' https:; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self';"
+    )
+
+    # HSTS (only in production)
+    if os.getenv("ENVIRONMENT") == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+    return response
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
     """Log all incoming requests."""
     logger.info(f"{request.method} {request.url.path}")
     response = await call_next(request)

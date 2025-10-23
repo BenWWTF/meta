@@ -11,14 +11,17 @@ Routes:
 - GET /about - About page
 """
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from fastapi import Depends
 
 from app.database import get_db, Organization, Publication
+
+# ✅ SECURE: Initialize templates once at module level (not in each route)
+templates = Jinja2Templates(directory="app/templates")
 
 router = APIRouter(tags=["Web UI"])
 
@@ -26,65 +29,45 @@ router = APIRouter(tags=["Web UI"])
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Homepage with statistics and featured organizations."""
-    from jinja2 import Environment, FileSystemLoader
-
-    env = Environment(loader=FileSystemLoader("app/templates"))
-    template = env.get_template("index.html")
-    return template.render(request=request)
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @router.get("/search", response_class=HTMLResponse)
 async def search(request: Request):
     """Publication search page."""
-    from jinja2 import Environment, FileSystemLoader
-
-    env = Environment(loader=FileSystemLoader("app/templates"))
-    template = env.get_template("search.html")
-    return template.render(request=request)
+    return templates.TemplateResponse("search.html", {"request": request})
 
 
 @router.get("/analytics", response_class=HTMLResponse)
 async def analytics(request: Request):
     """Analytics and insights dashboard."""
-    from jinja2 import Environment, FileSystemLoader
-
-    env = Environment(loader=FileSystemLoader("app/templates"))
-    template = env.get_template("analytics.html")
-    return template.render(request=request)
+    return templates.TemplateResponse("analytics.html", {"request": request})
 
 
 @router.get("/organizations", response_class=HTMLResponse)
 async def organizations_list(request: Request):
     """Organization listing page."""
-    from jinja2 import Environment, FileSystemLoader
-
-    env = Environment(loader=FileSystemLoader("app/templates"))
-    template = env.get_template("organizations.html")
-    return template.render(request=request)
+    return templates.TemplateResponse("organizations.html", {"request": request})
 
 
 @router.get("/organizations/{org_id}", response_class=HTMLResponse)
 async def organization_detail(org_id: str, request: Request, db: Session = Depends(get_db)):
     """Organization detail page."""
-    from jinja2 import Environment, FileSystemLoader
-
     # Get organization
     org = db.query(Organization).filter(Organization.id == org_id).first()
 
     if not org:
-        return "<h1>Organization not found</h1>"
+        raise HTTPException(status_code=404, detail="Organization not found")
 
-    env = Environment(loader=FileSystemLoader("app/templates"))
-    template = env.get_template("organization_detail.html")
-
-    return template.render(request=request, organization=org)
+    return templates.TemplateResponse(
+        "organization_detail.html",
+        {"request": request, "organization": org}
+    )
 
 
 @router.get("/about", response_class=HTMLResponse)
 async def about(request: Request):
     """About page."""
-    from jinja2 import Environment, FileSystemLoader
-
     html = """
     <!DOCTYPE html>
     <html lang="en">

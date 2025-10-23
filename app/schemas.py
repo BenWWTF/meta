@@ -240,13 +240,18 @@ class ProjectWithPublicationsResponse(ProjectResponse):
 class SearchFilters(BaseModel):
     """Filters for search operations"""
 
-    query: Optional[str] = Field(None, description="Free text search query")
-    year_from: Optional[int] = None
-    year_to: Optional[int] = None
-    organization_id: Optional[str] = None
-    publication_type: Optional[str] = None
+    query: Optional[str] = Field(
+        None,
+        description="Free text search query",
+        max_length=500,  # ✅ SECURE: Prevent DOS from huge searches
+        min_length=1,
+    )
+    year_from: Optional[int] = Field(None, ge=1800, le=2100)  # ✅ SECURE: Realistic year range
+    year_to: Optional[int] = Field(None, ge=1800, le=2100)  # ✅ SECURE: Realistic year range
+    organization_id: Optional[str] = Field(None, max_length=100)  # ✅ SECURE: Constrain length
+    publication_type: Optional[str] = Field(None, max_length=100)  # ✅ SECURE: Constrain length
     open_access_only: Optional[bool] = False
-    funder: Optional[str] = None
+    funder: Optional[str] = Field(None, max_length=200)  # ✅ SECURE: Constrain length
     limit: int = Field(default=50, ge=1, le=1000)
     offset: int = Field(default=0, ge=0)
 
